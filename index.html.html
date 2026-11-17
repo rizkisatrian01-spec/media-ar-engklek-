@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Engklek AR – Perkalian</title>
+<style>
+:root{--bg:#0f2a26;--pan:rgba(15,42,38,.84);--ink:#fff6df;--acc:#ffb703;--ok:#5be08a;--bad:#ff7b6b;--card:#fff6df;--cardink:#0f2a26;--grp:#4cc9f0;--btn:#285149}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,sans-serif}
+#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#app{position:fixed;inset:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.scr{display:none;position:absolute;inset:0;flex-direction:column;padding:10px;gap:8px;overflow:auto}
+.scr.on{display:flex}
+.panel{background:var(--pan);backdrop-filter:blur(4px);border-radius:16px;padding:12px 14px}
+.mid{margin:auto 0}
+h1{margin:0;font-size:1.7rem;letter-spacing:.5px}h2{margin:10px 0 6px;font-size:1rem;color:var(--acc)}
+p{margin:4px 0;line-height:1.4}.sub{color:#cfe3dc}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 14px;background:var(--btn);color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc)}
+button.sel{background:var(--acc);color:var(--bg)}
+button:disabled{opacity:.4}
+.big{width:100%;background:var(--acc);color:var(--bg);font-size:1.1rem;margin-top:10px}
+.row{display:flex;flex-wrap:wrap;gap:6px}.row button{min-width:46px}
+input[type=number]{font:inherit;font-size:1.3rem;width:100px;padding:8px;border-radius:10px;border:2px solid var(--acc);background:#fff;color:var(--bg)}
+.dev{display:block;margin-top:12px;font-size:.85rem;color:#cfe3dc}
+#chk{list-style:none;padding:0;margin:6px 0}#chk li{padding:3px 0}.yes{color:var(--ok)}.no{color:#cfe3dc}
+#bar{display:flex;justify-content:space-between;gap:8px;font-weight:700;font-size:.95rem}
+#board{flex:1;min-height:90px;overflow:auto;display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;background:rgba(15,42,38,.55)}
+.g{width:62px;text-align:center}.g .lb{font-size:.68rem;color:var(--grp);font-weight:700}
+.card{background:var(--card);color:var(--cardink);border-radius:8px;font-weight:800;font-size:1.4rem;padding:3px 0}
+.dots{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:4px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--grp)}
+.g.new{animation:pop .35s}
+@keyframes pop{from{transform:scale(.3);opacity:0}to{transform:none;opacity:1}}
+#eq{font-size:1.5rem;font-weight:800;text-align:center;overflow-wrap:anywhere}
+#low{display:flex;align-items:flex-end;gap:10px}
+#chr{width:54px;flex:none}#chr.jump{animation:hop .55s ease-out}
+@keyframes hop{0%,100%{transform:translateY(0)}45%{transform:translateY(-46px)}}
+#chip{flex:1;font-weight:700;font-size:1.02rem;line-height:1.3}
+#ans{display:none}#ans.on{display:block}
+#ans .r{display:flex;gap:8px;align-items:center;margin-top:6px}
+#fb{min-height:1.3em;font-weight:700;margin-top:4px}.fok{color:var(--ok)}.fbad{color:var(--bad)}
+#ctl{display:flex;gap:6px}#ctl button{flex:1;padding:8px 4px;font-size:.85rem}
+#devPanel{display:none;font-size:.8rem}#devPanel.on{display:block}
+#devPanel label{display:block;margin-top:4px}#devPanel input[type=range]{width:100%}
+#dbgOut{font-family:monospace;margin-top:6px}
+#toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--ok);color:var(--bg);font-weight:800;padding:8px 18px;border-radius:20px;display:none}
+.sum{font-size:1.5rem;font-weight:800;margin:6px 0}
+</style></head><body>
+<video id="cam" playsinline muted></video>
+<div id="app">
+
+<section id="s-setup" class="scr on"><div class="panel mid">
+<h1>Engklek AR</h1><p class="sub">Perkalian sebagai penjumlahan berulang</p>
+<h2>Level (dipilih guru)</h2><div id="lv" class="row"></div>
+<div id="l5" hidden><p>Target <input id="t5" type="number" min="2" max="100" value="24"> &nbsp; Banyak kelompok <input id="g5" type="number" min="2" max="10" value="4"></p></div>
+<p id="tinfo"></p>
+<h2>Isi setiap kelompok</h2><div id="ng" class="row"></div>
+<button id="go" class="big" disabled>Lanjut ke kalibrasi</button>
+<label class="dev"><input type="checkbox" id="devc"> Mode pengembang</label>
+</div></section>
+
+<section id="s-cal" class="scr"><div class="panel mid">
+<h2>Kalibrasi posisi</h2>
+<p>Pasang HP pada penyangga. Berdiri di depan kamera depan sampai kepala, pinggul, lutut, dan kaki terlihat, dengan ruang di atas kepala untuk melompat. Hanya satu orang di area kamera.</p>
+<ul id="chk"></ul><p id="cmsg"></p>
+<button id="start" class="big" disabled>Mulai</button>
+<button id="back" style="width:100%;margin-top:8px">Kembali ke pilihan</button>
+</div></section>
+
+<section id="s-play" class="scr">
+<div id="toast"></div>
+<div class="panel" id="bar"><span id="i1"></span><span id="i2"></span><span id="i3"></span></div>
+<div class="panel" id="board"></div>
+<div class="panel" id="eq"></div>
+<div id="low">
+<svg id="chr" viewBox="0 0 60 92" aria-label="Karakter"><circle cx="30" cy="16" r="13" fill="#ffb703"/><circle cx="25" cy="14" r="2" fill="#0f2a26"/><circle cx="35" cy="14" r="2" fill="#0f2a26"/><path d="M24 20q6 5 12 0" stroke="#0f2a26" stroke-width="2" fill="none"/><rect x="18" y="31" width="24" height="31" rx="9" fill="#4cc9f0"/><path d="M18 36L6 52M42 36L54 52M25 62L21 86M35 62L39 86" stroke="#ffb703" stroke-width="6" stroke-linecap="round"/></svg>
+<div class="panel" id="chip"></div></div>
+<div class="panel" id="ans"><b>Berapa jumlahnya sekarang?</b>
+<div class="r"><input id="in" type="number" inputmode="numeric" aria-label="Jawaban"><button id="ok" class="sel">Jawab</button></div>
+<div id="fb"></div></div>
+<div id="ctl"><button id="pz">Jeda</button><button id="rc">Kalibrasi ulang</button><button id="stop">Berhenti</button></div>
+<div class="panel" id="devPanel"><b>Mode pengembang</b><div id="sl"></div>
+<button id="sim" style="margin-top:6px">Simulasi lompatan</button><div id="dbgOut"></div></div>
+</section>
+
+<section id="s-end" class="scr"><div class="panel mid">
+<h1 id="etitle"></h1><div class="sum" id="esum"></div><div class="sum" id="eprod"></div>
+<p id="emsg"></p>
+<button id="again" class="big">Ulangi pilihan ini</button>
+<button id="other" class="big" style="background:var(--btn);color:var(--ink)">Coba bilangan lain</button>
+</div></section>
+</div>
+
+<script type="module">
+const CDN="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const MODEL="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+const $=s=>document.querySelector(s);
+const W=["nol","satu","dua","tiga","empat","lima","enam","tujuh","delapan","sembilan","sepuluh"];
+const LV={1:8,2:12,3:16,4:20};
+const P={up:.12,minAir:120,stable:600,guard:800};
+try{Object.assign(P,JSON.parse(localStorage.getItem("engklekP")||"{}"))}catch(e){}
+const S={level:1,target:8,n:0,G:0,groups:0,total:0,state:"idle",waiting:false,paused:false,playing:false,dev:false,noCam:false,base:null,samples:[],recal:false};
+let pose=null,stream=null,looping=false,lastT=-1,tStable=0,tRecov=0,tUp=0,fps=0,fN=0,fT=0,last={},ck={cam:false,model:false,body:false,still:false};
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const scr=id=>{document.querySelectorAll(".scr").forEach(e=>e.classList.toggle("on",e.id===id))};
+
+/* ---------- Setup ---------- */
+for(let i=1;i<=5;i++){const b=document.createElement("button");b.textContent="Level "+i;b.onclick=()=>pickLevel(i);$("#lv").append(b)}
+for(let i=1;i<=10;i++){const b=document.createElement("button");b.textContent=i;b.onclick=()=>{S.n=i;[...$("#ng").children].forEach(c=>c.classList.toggle("sel",c===b));$("#go").disabled=false};$("#ng").append(b)}
+function pickLevel(l){S.level=l;[...$("#lv").children].forEach((c,i)=>c.classList.toggle("sel",i+1===l));
+ $("#l5").hidden=l<5;
+ $("#tinfo").textContent=l<5?`Target ${LV[l]}. Lompat sampai jumlahnya tepat target (paling banyak 10 kelompok).`:"Guru menentukan target dan banyak kelompok; peserta didik memilih isi kelompok."}
+pickLevel(1);
+$("#devc").onchange=e=>{S.dev=e.target.checked};
+$("#go").onclick=()=>{
+ if(S.level<5)S.target=LV[S.level];
+ else{S.target=+$("#t5").value;S.G=+$("#g5").value;if(!(S.target>=2&&S.G>=2&&S.G<=10)){$("#tinfo").textContent="Isi target (≥2) dan banyak kelompok (2–10).";return}}
+ scr("s-cal");startCalib(false)};
+$("#back").onclick=()=>{const inGame=S.recal&&S.playing;S.recal=false;if(inGame){S.state=S.waiting?"wait":"recover";tStable=0;tRecov=performance.now();scr("s-play")}else scr("s-setup")};
+
+/* ---------- Kalibrasi & model ---------- */
+function updChk(){
+ const rows=[["Kamera aktif",ck.cam],["Model pelacak dimuat",ck.model],["Tubuh terlihat (bahu sampai kaki)",ck.body],["Posisi berdiri stabil",ck.still]];
+ $("#chk").innerHTML=rows.map(r=>`<li class="${r[1]?"yes":"no"}">${r[1]?"✓":"○"} ${r[0]}</li>`).join("")}
+async function startCalib(recal){
+ S.recal=recal;S.state="calib";S.base=null;S.samples=[];S.noCam=false;ck.body=ck.still=false;$("#start").disabled=true;$("#cmsg").textContent="";updChk();
+ try{
+  if(!stream){stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});$("#cam").srcObject=stream;await $("#cam").play()}
+  ck.cam=true;updChk();
+ }catch(e){$("#cmsg").textContent="Kamera tidak bisa dibuka ("+e.name+"). Pastikan halaman memakai HTTPS dan izin kamera diberikan.";
+  if(S.dev){S.noCam=true;$("#cmsg").textContent+=" Mode pengembang: lanjut tanpa kamera memakai tombol simulasi.";$("#start").disabled=false}return}
+ if(!pose){$("#cmsg").textContent="Memuat model pelacak…";
+  try{pose=await loadPose();ck.model=true;$("#cmsg").textContent=""}catch(e){$("#cmsg").textContent="Model gagal dimuat: "+e.message+". Periksa koneksi internet.";return}}
+ ck.model=true;updChk();
+ if(!looping){looping=true;requestAnimationFrame(loop)}}
+async function loadPose(){
+ const {PoseLandmarker,FilesetResolver}=await import(CDN+"/+esm");
+ const fs=await FilesetResolver.forVisionTasks(CDN+"/wasm");
+ const mk=d=>PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:MODEL,delegate:d},runningMode:"VIDEO",numPoses:1});
+ try{return await mk("GPU")}catch(e){return await mk("CPU")}}
+
+/* ---------- Deteksi ---------- */
+function metrics(lm){
+ if(![11,12,23,24,25,26,27,28].every(i=>(lm[i].visibility??0)>.5)||lm[27].y>.99||lm[28].y>.99)return null;
+ const sy=(lm[11].y+lm[12].y)/2,hy=(lm[23].y+lm[24].y)/2,ay=(lm[27].y+lm[28].y)/2;
+ return{hy,ay,torso:Math.abs(hy-sy)||.01}}
+function loop(){
+ requestAnimationFrame(loop);const v=$("#cam");
+ if(!pose||v.readyState<2||v.currentTime===lastT)return;lastT=v.currentTime;
+ let m=null;try{const r=pose.detectForVideo(v,performance.now());if(r.landmarks&&r.landmarks[0])m=metrics(r.landmarks[0])}catch(e){}
+ const now=performance.now();fN++;if(now-fT>1000){fps=fN;fN=0;fT=now}
+ step(m,now)}
+function calibStep(m){
+ const c=S.samples;
+ if(!m){c.length=0;ck.body=ck.still=false;updChk();return}
+ ck.body=true;c.push(m);if(c.length>30)c.shift();
+ const hs=c.map(x=>x.hy);ck.still=c.length>=30&&Math.max(...hs)-Math.min(...hs)<.03;
+ if(ck.still&&!S.base){S.base={hy:avg(hs),ay:avg(c.map(x=>x.ay)),torso:avg(c.map(x=>x.torso))};$("#start").disabled=false}
+ updChk()}
+function step(m,now){
+ if(S.state==="calib"){calibStep(m);return}
+ if(S.paused||!["ready","cand","recover","lost"].includes(S.state)){showDbg();return}
+ if(!m){S.state="lost";setChip(now);showDbg();return}
+ const rise=(S.base.hy-m.hy)/S.base.torso,ar=(S.base.ay-m.ay)/S.base.torso;last.rise=rise;last.ar=ar;
+ switch(S.state){
+  case"lost":S.state="recover";tStable=0;tRecov=now;break;
+  case"recover":if(Math.abs(rise)<.06){if(!tStable)tStable=now;if(now-tStable>=P.stable+P.guard)S.state="ready"}else tStable=0;break;
+  case"ready":if(rise>P.up&&ar>P.up*.5){S.state="cand";tUp=now}break;
+  case"cand":if(rise<P.up*.4){const a=now-tUp;if(a>=P.minAir&&a<=1500)accept();else S.state="ready"}
+   else if(now-tUp>1500){S.state="recover";tStable=0;tRecov=now}break}
+ setChip(now);showDbg()}
+
+/* ---------- Permainan ---------- */
+function newTrial(){S.groups=0;S.total=0;S.waiting=false;S.playing=true;S.paused=false;$("#board").innerHTML="";$("#ans").classList.remove("on");$("#pz").textContent="Jeda";render()}
+$("#start").onclick=()=>{
+ scr("s-play");
+ if(S.recal){S.recal=false}else newTrial();
+ S.state=S.waiting?"wait":(S.noCam?"ready":"recover");tStable=0;tRecov=performance.now();
+ $("#devPanel").classList.toggle("on",S.dev);render();setChip(performance.now())};
+function accept(){
+ if(!S.playing||S.waiting)return;
+ S.groups++;S.waiting=true;S.state="wait";
+ const g=document.createElement("div");g.className="g new";
+ g.innerHTML=`<div class="lb">Kelompok ${S.groups}</div><div class="card">${S.n}</div><div class="dots">${"<i></i>".repeat(S.n)}</div>`;
+ $("#board").append(g);g.scrollIntoView({block:"nearest"});
+ const c=$("#chr");c.classList.remove("jump");void c.getBoundingClientRect();c.classList.add("jump");
+ $("#ans").classList.add("on");$("#in").value="";$("#fb").textContent="";$("#in").focus();render();setChip(performance.now())}
+function render(){
+ $("#i1").textContent=S.level<5?`Target ${S.target}`:`Target ${S.target} dalam ${S.G} kelompok`;
+ $("#i2").textContent=`Isi kelompok: ${S.n}`;
+ $("#i3").textContent=`Lompatan: ${S.groups}`;
+ $("#eq").textContent=S.groups?Array(S.groups).fill(S.n).join(" + ")+" = "+(S.waiting?"…":S.total):"Lompat untuk memulai"}
+function setChip(now){
+ let t="";
+ if(S.paused)t="Dijeda.";
+ else switch(S.state){
+  case"wait":t="Jawab dulu sebelum lompat lagi.";break;
+  case"recover":t=(now-tRecov>4000)?"Berdiri tegak dan diam di posisi awal, atau tekan Kalibrasi ulang.":"Berdiri tegak dan diam…";break;
+  case"ready":t=S.noCam?"Mode tanpa kamera: pakai tombol simulasi.":"Siap! Lompat sekarang.";break;
+  case"cand":t="Gerakan terdeteksi…";break;
+  case"lost":t="Tubuh tidak terlihat. Berdiri di depan kamera.";break}
+ if($("#chip").textContent!==t)$("#chip").textContent=t}
+function showToast(t){const e=$("#toast");e.textContent=t;e.style.display="block";clearTimeout(showToast.h);showToast.h=setTimeout(()=>e.style.display="none",1100)}
+function submit(){
+ if(!S.waiting)return;const v=parseInt($("#in").value,10);if(isNaN(v))return;
+ const exp=S.n*S.groups;
+ if(v!==exp){$("#fb").className="fbad";$("#fb").textContent="Belum tepat. Hitung lagi semua objek, lalu jawab.";$("#in").value="";return}
+ S.total=exp;S.waiting=false;$("#ans").classList.remove("on");showToast("Benar!");render();
+ let end=null;
+ if(S.level<5){if(S.total===S.target)end="ok";else if(S.total>S.target||S.groups>=10)end="no"}
+ else if(S.groups>=S.G)end=S.total===S.target?"ok":"no";
+ if(end){finish(end);return}
+ S.state=S.noCam?"ready":"recover";tStable=0;tRecov=performance.now();setChip(tRecov)}
+$("#ok").onclick=submit;$("#in").onkeydown=e=>{if(e.key==="Enter")submit()};
+function finish(res){
+ S.playing=false;S.state="done";
+ const g=S.groups,n=S.n;
+ $("#etitle").textContent=res==="ok"?"Berhasil!":"Belum sesuai target";
+ $("#esum").textContent=Array(g).fill(n).join(" + ")+" = "+S.total;
+ $("#eprod").textContent=`${g} × ${n} = ${S.total}`;
+ const cap=W[g][0].toUpperCase()+W[g].slice(1);
+ $("#emsg").textContent=res==="ok"?`${cap} kelompok, masing-masing berisi ${W[n]}. Refleksi: berapa kelompok? Berapa isi setiap kelompok? Coba bilangan lain atau lanjut tantangan.`
+  :"Pilihan ini belum menghasilkan target dalam aturan tantangan. Coba bilangan lain.";
+ scr("s-end")}
+$("#again").onclick=()=>{scr("s-play");newTrial();S.state=S.noCam?"ready":"recover";tStable=0;tRecov=performance.now();setChip(tRecov)};
+$("#other").onclick=()=>{S.n=0;$("#go").disabled=true;[...$("#ng").children].forEach(c=>c.classList.remove("sel"));scr("s-setup")};
+$("#pz").onclick=()=>{S.paused=!S.paused;$("#pz").textContent=S.paused?"Lanjut":"Jeda";
+ if(!S.paused){S.state=S.waiting?"wait":(S.noCam?"ready":"recover");tStable=0;tRecov=performance.now()}setChip(performance.now())};
+$("#rc").onclick=()=>{S.paused=false;scr("s-cal");startCalib(true)};
+$("#stop").onclick=()=>{S.playing=false;S.state="idle";scr("s-setup")};
+
+/* ---------- Mode pengembang ---------- */
+[["up","Ambang naik (× panjang badan)",.05,.4,.01],["minAir","Durasi minimum di udara (ms)",40,400,10],["stable","Diam stabil (ms)",200,1500,50],["guard","Jeda pengaman (ms)",0,2000,50]].forEach(([k,t,a,b,s])=>{
+ const l=document.createElement("label");l.innerHTML=`${t}: <b>${P[k]}</b><input type="range" min="${a}" max="${b}" step="${s}" value="${P[k]}">`;
+ l.querySelector("input").oninput=e=>{P[k]=+e.target.value;l.querySelector("b").textContent=P[k];try{localStorage.setItem("engklekP",JSON.stringify(P))}catch(x){}};
+ $("#sl").append(l)});
+$("#sim").onclick=()=>{if(S.dev&&S.playing&&!S.waiting&&!S.paused)accept()};
+function showDbg(){if(S.dev)$("#dbgOut").textContent=`status ${S.state} | naik ${(last.rise??0).toFixed(2)} | kaki ${(last.ar??0).toFixed(2)} | fps ${fps}`}
+updChk();
+</script>
+</body></html>
