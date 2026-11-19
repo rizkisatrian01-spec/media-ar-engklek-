@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Engklek AR – Perkalian</title>
+<style>
+:root{--bg:#0f2a26;--ink:#fff6df;--acc:#ffb703;--ok:#5be08a;--bad:#ff7b6b;--btn:#285149}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",Roboto,sans-serif;overflow:hidden}
+#e-cam,#e-cv{position:fixed;inset:0;width:100%;height:100%}
+#e-cv{touch-action:none}
+#e-sk{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+#e-cam{object-fit:cover;transform:scaleX(-1)}
+#e-ui{position:fixed;inset:0;display:none;pointer-events:none;padding:calc(env(safe-area-inset-top) + 8px) 10px 10px}
+#e-ui.on{display:block}#e-ui>*{pointer-events:auto}
+.pill{background:rgba(15,42,38,.78);border-radius:14px;padding:6px 14px}
+#e-top{text-align:center}
+#e-q{display:inline-block;font-size:1.35rem;font-weight:800}
+#e-eq{font-size:1.7rem;font-weight:800;color:var(--acc);text-shadow:0 2px 6px #000;min-height:2.1rem;margin-top:4px}
+#e-ans{display:none;margin-top:4px}#e-ans.on{display:block}
+#e-in{font:inherit;font-size:1.3rem;width:96px;padding:6px;border-radius:10px;border:2px solid var(--acc);background:#fff;color:var(--bg);text-align:center}
+button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:10px 16px;background:var(--btn);color:var(--ink)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--acc)}
+#e-ok{background:var(--acc);color:var(--bg);margin-left:6px}
+#e-fb{min-height:1.2em;font-weight:700;color:var(--bad);text-shadow:0 1px 4px #000}
+#e-pick{display:none;grid-template-columns:repeat(5,1fr);gap:8px;max-width:360px;margin:10px auto 0}
+#e-pick.on{display:grid}
+#e-pick button{border-radius:50%;aspect-ratio:1;padding:0;font-size:1.4rem;background:var(--card,#fff6df);color:var(--bg);border:3px solid var(--acc)}
+#e-msg{display:none;position:fixed;left:50%;top:13%;transform:translateX(-50%);max-width:88%;text-align:center;font-weight:700;background:rgba(15,42,38,.85);border-radius:14px;padding:10px 16px}
+#e-ctl{position:fixed;right:10px;bottom:calc(env(safe-area-inset-bottom) + 10px);display:flex;flex-direction:column;gap:8px}
+#e-ctl button{width:44px;height:44px;padding:0;border-radius:50%;background:rgba(15,42,38,.78)}
+#e-dev{position:fixed;left:8px;bottom:8px;max-width:62%;font-size:.75rem;background:rgba(15,42,38,.88);border-radius:10px;padding:6px}
+#e-dev label{display:block}#e-dev input{width:100%}
+.ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(15,42,38,.55);overflow:auto}
+.ov[hidden]{display:none}
+.box{background:rgba(15,42,38,.92);border-radius:18px;padding:16px;max-width:420px;width:100%}
+h1{margin:0;font-size:1.7rem}h2{margin:12px 0 6px;font-size:1rem;color:var(--acc)}p{margin:4px 0;line-height:1.4}
+.row{display:flex;flex-wrap:wrap;gap:6px}.row button{min-width:46px}
+button.sel{background:var(--acc);color:var(--bg)}button:disabled{opacity:.4}
+.big{width:100%;background:var(--acc);color:var(--bg);font-size:1.1rem;margin-top:10px}
+.alt{width:100%;margin-top:8px}
+#e-menu{align-items:flex-start}#e-menu .box{margin:auto}
+details{background:rgba(255,255,255,.07);border-radius:12px;padding:8px 12px;margin-top:8px}
+summary{font-weight:800;color:var(--acc);cursor:pointer;padding:4px 0}
+details p,details li{line-height:1.45;font-size:.95rem}details ol{padding-left:20px;margin:6px 0}
+details a{color:var(--acc);font-weight:700}.cap{font-size:.85rem;color:#cfe3dc}
+.sum{font-size:1.5rem;font-weight:800;margin:6px 0}
+.box input[type=number]{font:inherit;font-size:1.2rem;width:90px;padding:6px;border-radius:10px;border:2px solid var(--acc)}
+/* tema cerah */
+:root{--ink:#1d2b53;--acc:#ff7b00;--btn:#ffd23f}
+body{background:linear-gradient(160deg,#4cc9f0,#4361ee 55%,#f72585);color:var(--ink)}
+.pill,#e-msg{background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.3)}
+#e-eq{color:#fff;text-shadow:0 2px 0 #1d2b53,0 0 10px #1d2b53,0 0 4px #1d2b53}
+button{background:var(--btn);color:var(--ink)}
+button.sel,#e-ok,.big{background:#ff7b00;color:#fff}
+#e-ctl button{background:rgba(255,255,255,.95);color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.ov{background:rgba(29,43,83,.45)}
+#e-menu{background:linear-gradient(160deg,#4cc9f0,#4361ee 55%,#f72585)}
+.box{background:#fff;color:var(--ink)}
+h2,summary{color:#f72585}details{background:#eef6ff}details a{color:#4361ee}
+.cap{color:#4a5578}input[type=number]{border-color:#ff7b00}
+#e-fb{background:#fff;border-radius:8px;padding:2px 8px;display:inline-block}#e-fb:empty{display:none}
+</style></head><body>
+<video id="e-cam" playsinline muted></video><canvas id="e-cv"></canvas><canvas id="e-sk"></canvas>
+
+<div id="e-ui">
+ <div id="e-top"><div id="e-q" class="pill"></div><div id="e-eq"></div>
+  <div id="e-ans"><input id="e-in" type="number" inputmode="numeric" aria-label="Jawaban"><button id="e-ok">Jawab</button><div id="e-fb"></div></div></div>
+ <div id="e-pick"></div>
+ <div id="e-ctl"><button id="e-mu" aria-label="Suara">♪</button><button id="e-pz" aria-label="Jeda">❚❚</button><button id="e-rc" aria-label="Kalibrasi ulang">↻</button><button id="e-xx" aria-label="Kembali ke menu">✕</button></div>
+ <details id="e-dev"><summary>dev</summary><div id="e-sl"></div><button id="e-sim" style="margin-top:4px;padding:6px 10px">Simulasi lompatan</button><div id="e-dbg" style="font-family:monospace;margin-top:4px"></div></details>
+ <div id="e-msg"></div>
+</div>
+
+<div id="e-menu" class="ov"><div class="box">
+ <h1>Engklek AR</h1><p>Perkalian sebagai penjumlahan berulang</p>
+ <details><summary>Materi</summary>
+  <p>Perkalian adalah penjumlahan berulang, yaitu menjumlahkan anggota yang sama banyak dari setiap kelompoknya.</p>
+  <p>Contoh: 4 + 4 + 4 = 12 dibaca 3 × 4 = 12, artinya tiga kelompok dengan isi empat di setiap kelompok.</p>
+  <p>Soal … × 3 = 12 dibaca: ada … kotak, setiap kotak berisi 3. Angka pertama adalah banyak lompatan, angka kedua adalah isi tiap kotak.</p>
+  <a id="e-mat" href="#" target="_blank" rel="noopener" hidden>Buka materi lengkap</a></details>
+ <details><summary>Petunjuk penggunaan</summary><ol>
+  <li>Pasang HP di penyangga setinggi pinggang dengan kamera depan menghadap area lompat, sekitar 2 sampai 3 meter.</li>
+  <li>Pastikan bahu sampai pinggul terlihat di layar (seluruh tubuh lebih baik) dan ada ruang di atas kepala. Titik hijau di tubuh menandakan pelacakan bekerja.</li>
+  <li>Guru memilih level, tekan Siap mulai, lalu izinkan kamera.</li>
+  <li>Berdiri tegak dan diam sampai petak muncul di kaki.</li>
+  <li>Ketuk satu angka di petak sebagai isi kelompok.</li>
+  <li>Lompat satu kali. Angka muncul di petak berikutnya.</li>
+  <li>Jawab jumlah sekarang. Kalau benar, lompat lagi sampai jumlah tepat target.</li>
+  <li>Tombol ↻ untuk kalibrasi ulang, ❚❚ untuk jeda, ♪ untuk suara, ✕ untuk kembali ke menu.</li></ol>
+  <p>Pastikan area bebas, lantai tidak licin, dan siswa didampingi guru.</p></details>
+ <details><summary>Alur permainan</summary><svg viewBox="0 0 360 590" width="100%" role="img" aria-label="Flowchart alur permainan Engklek AR" style="max-width:360px;display:block;margin:auto">
+<defs><marker id="fa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M2 1L8 5L2 9" fill="none" stroke="#1d2b53" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<style>.fb rect{fill:#4cc9f0;stroke:#1d2b53;stroke-width:1.2}.fd rect{fill:#ffd23f}.fe rect{fill:#b9fbc0;stroke:#1d2b53}
+.fb text{fill:#1d2b53;font:700 11.5px "Trebuchet MS",sans-serif}.fd text{fill:#1d2b53}.fl{fill:#1d2b53;font:11px "Trebuchet MS",sans-serif}
+.fa{stroke:#1d2b53;stroke-width:1.4;fill:none}</style>
+<g class="fb"><rect x="50" y="10" width="200" height="34" rx="8"/><text x="150" y="27" text-anchor="middle" dominant-baseline="central">Guru memilih level</text></g>
+<g class="fb"><rect x="50" y="62" width="200" height="34" rx="8"/><text x="150" y="79" text-anchor="middle" dominant-baseline="central">Kamera aktif, petak tampil</text></g>
+<g class="fb fd"><rect x="50" y="114" width="200" height="34" rx="8"/><text x="150" y="131" text-anchor="middle" dominant-baseline="central">Tubuh terlihat dan diam?</text></g>
+<g class="fb"><rect x="50" y="166" width="200" height="34" rx="8"/><text x="150" y="183" text-anchor="middle" dominant-baseline="central">Ketuk angka di petak</text></g>
+<g class="fb"><rect x="50" y="218" width="200" height="34" rx="8"/><text x="150" y="235" text-anchor="middle" dominant-baseline="central">Berdiri tegak, lalu lompat</text></g>
+<g class="fb fd"><rect x="50" y="270" width="200" height="34" rx="8"/><text x="150" y="287" text-anchor="middle" dominant-baseline="central">Lompatan terdeteksi?</text></g>
+<g class="fb"><rect x="50" y="322" width="200" height="34" rx="8"/><text x="150" y="339" text-anchor="middle" dominant-baseline="central">Angka muncul, lompatan dikunci</text></g>
+<g class="fb"><rect x="50" y="374" width="200" height="34" rx="8"/><text x="150" y="391" text-anchor="middle" dominant-baseline="central">Jawab jumlah sekarang</text></g>
+<g class="fb fd"><rect x="50" y="426" width="200" height="34" rx="8"/><text x="150" y="443" text-anchor="middle" dominant-baseline="central">Jawaban benar?</text></g>
+<g class="fb fd"><rect x="50" y="478" width="200" height="34" rx="8"/><text x="150" y="495" text-anchor="middle" dominant-baseline="central">Jumlah dibanding target?</text></g>
+<g class="fb fe"><rect x="50" y="530" width="200" height="44" rx="8"/><text x="150" y="544" text-anchor="middle" dominant-baseline="central">Berhasil</text><text x="150" y="561" text-anchor="middle" dominant-baseline="central" style="font-weight:400;font-size:10.5px">4 + 4 + 4 + 4 = 16</text></g>
+<g class="fb fe"><rect x="266" y="468" width="90" height="54" rx="8"/><text x="311" y="487" text-anchor="middle" dominant-baseline="central" style="font-size:10.5px">Coba bilangan</text><text x="311" y="503" text-anchor="middle" dominant-baseline="central" style="font-size:10.5px">lain</text></g>
+<g class="fa" marker-end="url(#fa)"><path d="M150 44V60" marker-end="url(#fa)"/><path d="M150 96V112" marker-end="url(#fa)"/><path d="M150 148V164" marker-end="url(#fa)"/><path d="M150 200V216" marker-end="url(#fa)"/><path d="M150 252V268" marker-end="url(#fa)"/><path d="M150 304V320" marker-end="url(#fa)"/><path d="M150 356V372" marker-end="url(#fa)"/><path d="M150 408V424" marker-end="url(#fa)"/><path d="M150 460V476" marker-end="url(#fa)"/><path d="M150 512V528" marker-end="url(#fa)"/><path d="M250 495H264" marker-end="url(#fa)"/>
+<path d="M250 131H262V79H252" marker-end="url(#fa)"/><path d="M250 287H262V235H252" marker-end="url(#fa)"/><path d="M250 443H262V391H252" marker-end="url(#fa)"/><path d="M50 495H20V235H48" marker-end="url(#fa)"/></g>
+<text class="fl" x="268" y="106">belum</text><text class="fl" x="268" y="262">belum</text><text class="fl" x="268" y="418">salah</text>
+<text class="fl" x="158" y="470">benar</text><text class="fl" x="158" y="523">tepat</text><text class="fl" x="24" y="365">kurang</text><text class="fl" x="268" y="462">melebihi</text>
+</svg>
+  <p class="cap">Jika tubuh tidak terlihat, lompatan tidak dihitung sampai siswa kembali berdiri tegak di depan kamera.</p></details>
+ <h2>Level (dipilih guru)</h2><div id="e-lv" class="row"></div>
+ <div id="e-l5" hidden><p>Target <input id="e-t5" type="number" min="2" max="100" value="24"> &nbsp;Kelompok <input id="e-g5" type="number" min="2" max="10" value="4"></p></div>
+ <p id="e-info"></p>
+ <button id="e-go" class="big">Siap mulai</button>
+</div></div>
+
+<div id="e-end" class="ov" hidden><div class="box">
+ <h1 id="e-et"></h1><div class="sum" id="e-es"></div><div class="sum" id="e-ep"></div><p id="e-em"></p>
+ <button id="e-again" class="big">Ulangi pilihan ini</button>
+ <button id="e-other" class="alt">Coba bilangan lain</button>
+ <button id="e-home" class="alt">Menu</button>
+</div></div>
+
+<script type="module">
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const CDN="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+const MODEL="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+const $=s=>document.querySelector(s);
+const MATERI_URL=""; // isi dengan alamat materi pembelajaran; kosong = tautan disembunyikan
+if(MATERI_URL){const m=document.querySelector("#e-mat");m.href=MATERI_URL;m.hidden=false}
+const W=["nol","satu","dua","tiga","empat","lima","enam","tujuh","delapan","sembilan","sepuluh"];
+const LV={1:8,2:12,3:16,4:20};
+const P={up:.09,minAir:100,stable:350,guard:300};
+try{Object.assign(P,JSON.parse(localStorage.getItem("engklekP2")||"{}"))}catch(e){}
+const S={level:1,target:8,G:0,n:0,groups:0,total:0,state:"menu",waiting:false,paused:false,playing:false,noCam:false,base:null,samples:[],recal:false,dev:location.hash==="#dev"};
+let pose=null,stream=null,looping=false,lastT=-1,tStable=0,tRecov=0,tUp=0,fps=0,fN=0,fT=0,last={},fillT=[],okT=0,lastGood=0,hist=[];
+const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
+const msg=t=>{const e=$("#e-msg");e.textContent=t;e.style.display=t?"block":"none"};
+let ac=null,mute=false;
+function snd(k,i=0){if(mute)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")ac.resume();
+ const seq={tick:[[880,.04]],jump:[[440+i*45,.12,"triangle"]],ok:[[660,.12],[880,.18]],bad:[[170,.25,"sawtooth"]],win:[[523,.14],[659,.14],[784,.14],[1047,.3]]}[k];
+ let t=ac.currentTime;seq.forEach(([f,d,ty="sine"])=>{const o=ac.createOscillator(),gn=ac.createGain();o.type=ty;o.frequency.value=f;
+  gn.gain.setValueAtTime(.0001,t);gn.gain.exponentialRampToValueAtTime(.25,t+.02);gn.gain.exponentialRampToValueAtTime(.0001,t+d);
+  o.connect(gn).connect(ac.destination);o.start(t);o.stop(t+d+.02);t+=d*.9})}catch(e){}}
+$("#e-mu").onclick=()=>{mute=!mute;$("#e-mu").style.opacity=mute?.4:1};
+const lock=()=>{S.state=S.noCam?"ready":"recover";tStable=0;tRecov=performance.now();hist.length=0};
+
+/* ---------- Menu ---------- */
+for(let i=1;i<=5;i++){const b=document.createElement("button");b.textContent="Level "+i;b.onclick=()=>pickLevel(i);$("#e-lv").append(b)}
+function pickLevel(l){S.level=l;[...$("#e-lv").children].forEach((c,i)=>c.classList.toggle("sel",i+1===l));$("#e-l5").hidden=l<5;
+ $("#e-info").textContent=l<5?`Target ${LV[l]}. Peserta didik memilih angka, lalu melompat sampai jumlahnya tepat.`:"Guru menentukan target dan banyak kelompok."}
+pickLevel(1);
+$("#e-go").onclick=()=>{
+ if(S.level<5)S.target=LV[S.level];
+ else{S.target=+$("#e-t5").value;S.G=+$("#e-g5").value;if(!(S.target>=2&&S.G>=2&&S.G<=10)){$("#e-info").textContent="Isi target (≥2) dan kelompok (2–10).";return}}
+ snd("tick");$("#e-menu").hidden=true;$("#e-ui").classList.add("on");startCalib(false)};
+
+/* ---------- Kamera, model, kalibrasi ---------- */
+async function startCalib(recal){
+ if(!looping){looping=true;requestAnimationFrame(loop)}
+ S.recal=recal;S.state="calib";S.base=null;S.samples=[];S.noCam=false;tokensOn(false);render();
+ try{
+  if(!stream){stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"user",width:{ideal:640},height:{ideal:480}},audio:false});$("#e-cam").srcObject=stream;await $("#e-cam").play()}
+ }catch(e){
+  if(S.dev){S.noCam=true;msg("Kamera tidak terbuka. Mode dev: pakai tombol simulasi.");calibDone();return}
+  msg("Kamera tidak bisa dibuka ("+e.name+"). Pastikan memakai HTTPS dan izinkan kamera.");return}
+ if(!pose){msg("Memuat model…");
+  try{pose=await loadPose()}catch(e){msg("Model gagal dimuat: "+e.message);return}}
+ msg("Berdiri tegak di depan kamera")}
+async function loadPose(){
+ const {PoseLandmarker,FilesetResolver}=await import(CDN+"/+esm");
+ const fs=await FilesetResolver.forVisionTasks(CDN+"/wasm");
+ const mk=d=>PoseLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:MODEL,delegate:d},runningMode:"VIDEO",numPoses:1,minPoseDetectionConfidence:.3,minPosePresenceConfidence:.3,minTrackingConfidence:.3});
+ try{return await mk("GPU")}catch(e){return await mk("CPU")}}
+function metrics(lm){
+ const ok=i=>(lm[i].visibility??0)>.3;
+ if(!(ok(11)&&ok(12)&&ok(23)&&ok(24)))return null;
+ const sy=(lm[11].y+lm[12].y)/2,hy=(lm[23].y+lm[24].y)/2,torso=Math.abs(hy-sy)||.01;
+ const a=ok(27)&&ok(28)&&lm[27].y<.99&&lm[28].y<.99;
+ return{hy,torso,aE:!a,ay:a?(lm[27].y+lm[28].y)/2:hy+1.7*torso,ax:a?(lm[27].x+lm[28].x)/2:(lm[23].x+lm[24].x)/2}}
+function calibStep(m){
+ const c=S.samples;
+ if(!m){c.length=0;msg("Mundur sedikit sampai bahu sampai pinggul terlihat (kaki lebih baik).");return}
+ c.push(m);if(c.length>12)c.shift();const hs=c.map(x=>x.hy),tor=avg(c.map(x=>x.torso));
+ if(c.length>=12&&Math.max(...hs)-Math.min(...hs)<.12*tor){S.base={hy:avg(hs),ay:avg(c.map(x=>x.ay)),ax:avg(c.map(x=>x.ax)),torso:tor,aE:c.every(x=>x.aE)};S.rs=0;calibDone()}
+ else msg("Diam sebentar…")}
+function calibDone(){
+ msg("");place();
+ if(S.recal){S.recal=false;if(S.waiting)S.state="wait";else lock();render();return}
+ S.state="pick";tokensOn(true);render()}
+
+/* ---------- Deteksi lompatan ---------- */
+function loop(){
+ requestAnimationFrame(loop);const v=$("#e-cam"),now=performance.now();
+ if(pose&&v.readyState>=2&&v.currentTime!==lastT){
+  lastT=v.currentTime;let m=null,lm=null;
+  try{const r=pose.detectForVideo(v,now);lm=(r.landmarks&&r.landmarks[0])||null;if(lm)m=metrics(lm)}catch(e){}
+  drawSk(lm);
+  fN++;if(now-fT>1000){fps=fN;fN=0;fT=now}
+  step(m,now)}
+ draw(now)}
+function step(m,now){
+ if(S.state==="calib"){calibStep(m);return}
+ if(S.paused||!["ready","cand","recover","lost"].includes(S.state))return;
+ if(!m){if(now-lastGood>600)S.state=(S.state==="cand"&&now-tUp<2000)?"cand":"lost";status(now);return}
+ lastGood=now;const B=S.base;
+ const rise=(B.hy-m.hy)/B.torso;S.rs=S.rs==null?rise:S.rs+.6*(rise-S.rs);const rs=S.rs;
+ const ar=(m.aE||B.aE)?null:(B.ay-m.ay)/B.torso;last.rise=rs;last.ar=ar;
+ switch(S.state){
+  case"lost":S.state="recover";tRecov=now;hist.length=0;break;
+  case"recover":{hist.push({t:now,y:m.hy});while(hist.length&&now-hist[0].t>P.stable)hist.shift();
+   if(hist.length>3&&now-hist[0].t>=P.stable*.7&&now-tRecov>=P.guard){const ys=hist.map(x=>x.y);
+    if(Math.max(...ys)-Math.min(...ys)<.1*B.torso){B.hy=avg(ys);B.torso=m.torso;if(!m.aE){B.ay=m.ay;B.ax=m.ax;B.aE=false}S.rs=0;S.state="ready"}}break}
+  case"ready":if(Math.abs(rs)<.05)B.hy+=(m.hy-B.hy)*.03;
+   if(rs>P.up&&(ar==null||ar>P.up*.4)){S.state="cand";tUp=now}break;
+  case"cand":if(rs<P.up*.4){const a=now-tUp;if(a>=P.minAir&&a<=2000)accept();else S.state="ready"}
+   else if(now-tUp>2000){S.state="recover";tRecov=now;hist.length=0}break}
+ status(now);if(S.dev)$("#e-dbg").textContent=`${S.state} naik ${(last.rise??0).toFixed(2)} kaki ${last.ar==null?"-":last.ar.toFixed(2)} fps ${fps}`}
+function status(now){
+ msg(S.paused?"Dijeda":S.state==="lost"?"Tubuh belum terlihat. Mundur sampai bahu sampai pinggul terlihat.":S.state==="recover"?"Berdiri tegak dan diam sebentar…":"")}
+
+/* ---------- Permainan ---------- */
+function choose(n){snd("tick");
+ S.n=n;S.groups=0;S.total=0;S.waiting=false;S.playing=true;S.paused=false;fillT=[];
+ tokensOn(false);$("#e-ans").classList.remove("on");lock();render()}
+function accept(){
+ if(!S.playing||S.waiting||S.groups>=10)return;
+ fillT[S.groups]=performance.now();S.groups++;snd("jump",S.groups-1);S.waiting=true;S.state="wait";
+ $("#e-ans").classList.add("on");$("#e-in").value="";$("#e-fb").textContent="";$("#e-in").focus();render()}
+function render(){
+ const n=S.n||"…";
+ $("#e-q").innerHTML=(S.level<5?`… × ${n} = ${S.target}`:`${S.G} × ${n} = ${S.target}`)+'<div style="font-size:.68rem;font-weight:600;opacity:.75">banyak lompatan × isi tiap kotak</div>';
+ $("#e-eq").textContent=S.groups?Array(S.groups).fill(S.n).join(" + ")+" = "+(S.waiting?"?":S.total):""}
+function submit(){
+ if(!S.waiting)return;const v=parseInt($("#e-in").value,10);if(isNaN(v))return;
+ if(v!==S.n*S.groups){snd("bad");$("#e-fb").textContent="Belum tepat. Hitung lagi angka di petak.";$("#e-in").value="";return}
+ S.total=v;S.waiting=false;okT=performance.now();snd("ok");$("#e-ans").classList.remove("on");$("#e-in").blur();render();
+ let end=null;
+ if(S.level<5){if(S.total===S.target)end="ok";else if(S.total>S.target||S.groups>=10)end="no"}
+ else if(S.groups>=S.G)end=S.total===S.target?"ok":"no";
+ if(end)finish(end);else lock()}
+$("#e-ok").onclick=submit;$("#e-in").onkeydown=e=>{if(e.key==="Enter")submit()};
+function finish(res){
+ if(res==="ok")setTimeout(()=>snd("win"),350);S.playing=false;S.state="done";const g=S.groups,n=S.n,cap=W[g][0].toUpperCase()+W[g].slice(1);
+ $("#e-et").textContent=res==="ok"?"Berhasil!":"Belum sesuai target";
+ $("#e-es").textContent=Array(g).fill(n).join(" + ")+" = "+S.total;
+ $("#e-ep").textContent=`${g} × ${n} = ${S.total}`;
+ $("#e-em").textContent=res==="ok"?`Ada ${g} kotak, setiap kotak berisi ${n}. Jadi ${g} × ${n} = ${S.total}.`:"Pilihan ini belum menghasilkan target. Coba bilangan lain.";
+ $("#e-end").hidden=false}
+$("#e-again").onclick=()=>{$("#e-end").hidden=true;choose(S.n)};
+$("#e-other").onclick=()=>{$("#e-end").hidden=true;S.state="pick";S.n=0;S.groups=0;fillT=[];tokensOn(true);render()};
+$("#e-home").onclick=()=>{$("#e-end").hidden=true;toMenu()};
+$("#e-xx").onclick=toMenu;
+function toMenu(){tokensOn(false);S.playing=false;S.waiting=false;S.state="menu";S.groups=0;fillT=[];$("#e-ui").classList.remove("on");$("#e-ans").classList.remove("on");msg("");$("#e-menu").hidden=false}
+$("#e-pz").onclick=()=>{S.paused=!S.paused;if(!S.paused){S.state=S.waiting?"wait":(S.noCam?"ready":"recover");tStable=0;tRecov=performance.now()}status(performance.now())};
+$("#e-rc").onclick=()=>{S.paused=false;startCalib(true)};
+
+/* ---------- Petak engklek 3D di atas video ---------- */
+const cv=$("#e-cv"),renderer=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true});
+renderer.setPixelRatio(1);
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(55,1,.1,60);cam.position.set(0,2,0);cam.rotation.x=-.7;
+const M=(c,o)=>new THREE.MeshBasicMaterial({color:c,transparent:true,opacity:o,depthWrite:false,side:THREE.DoubleSide});
+const flat=(geo,mat,y)=>{const m=new THREE.Mesh(geo,mat);m.rotation.x=-Math.PI/2;m.position.y=y;return m};
+const T={};
+function tex(n,bg){const key=n+"|"+bg;if(T[key])return T[key];
+ const c=document.createElement("canvas");c.width=c.height=128;const x=c.getContext("2d");
+ if(bg){x.fillStyle=bg;x.beginPath();x.arc(64,64,60,0,7);x.fill();x.lineWidth=6;x.strokeStyle="#ffb703";x.stroke()}
+ x.font="800 84px 'Trebuchet MS',sans-serif";x.textAlign="center";x.textBaseline="middle";
+ if(!bg){x.lineWidth=12;x.strokeStyle="#0f2a26";x.strokeText(n,64,70)}
+ x.fillStyle=bg?"#0f2a26":"#fff6df";x.fillText(n,64,70);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return T[key]=t}
+const grid=new THREE.Group();scene.add(grid);
+const cells=[],tokens=[];let tokOn=false;
+const PAL=["#ffd23f","#ff7b54","#ff5d8f","#c77dff","#4cc9f0","#4895ef","#06d6a0","#9ef01a","#ff9f1c","#f72585"];
+function addCell(x,z,inner,labZ,ix,iz){
+ const g=new THREE.Group();g.position.set(x,0,z);
+ const lab=new THREE.Mesh(new THREE.PlaneGeometry(.9,.9),new THREE.MeshBasicMaterial({map:tex(1),transparent:true,depthWrite:false}));
+ lab.rotation.x=-Math.PI/2;lab.position.set(0,.012,labZ);lab.visible=false;
+ const im=new THREE.Mesh(new THREE.PlaneGeometry(.34,.34),new THREE.MeshBasicMaterial({map:tex(cells.length+1),transparent:true,depthWrite:false}));
+ im.rotation.x=-Math.PI/2;im.position.set(ix,.014,iz);
+ g.add(...inner,lab,im);grid.add(g);cells.push({inner:inner[1],lab,idx:im,x,z:z+labZ})}
+[[0,0],[0,1],[0,2],[-.5,3],[.5,3],[-.5,4],[.5,4],[-.5,5],[.5,5]].forEach(([cx,r])=>
+ addCell(cx,-(r+.5),[flat(new THREE.PlaneGeometry(1,1),M(0xffffff,.9),.004),flat(new THREE.PlaneGeometry(.94,.94),M(0x285149,.6),.006)],0,-.3,.3));
+{const a=flat(new THREE.CircleGeometry(1,48,0,Math.PI),M(0xffffff,.9),.004),b=flat(new THREE.CircleGeometry(.96,48,0,Math.PI),M(0x285149,.6),.006);
+ a.scale.set(1,1.2,1);b.scale.set(1,1.16,1);addCell(0,-6,[a,b],-.66,-.55,-.15)}
+cells.forEach((c,i)=>{const m=new THREE.Mesh(new THREE.CircleGeometry(.36,32),new THREE.MeshBasicMaterial({map:tex(i+1,"#fff6df"),transparent:true,side:THREE.DoubleSide}));
+ m.rotation.x=-Math.PI/2;m.position.set(c.x,.02,c.z);m.userData.n=i+1;m.userData.home=m.position.clone();m.visible=false;grid.add(m);tokens.push(m)});
+function tokensOn(v){tokOn=v;tokens.forEach(t=>t.position.copy(t.userData.home));msg(v?"Ketuk satu angka di petak untuk memilih":"")}
+
+/* petak menempel di posisi kaki hasil kalibrasi */
+let VW=0,VH=0;
+const sk=$("#e-sk"),sg=sk.getContext("2d");
+const rc=new THREE.Raycaster(),ndc=new THREE.Vector2(),pl=new THREE.Plane(new THREE.Vector3(0,1,0),0),hv=new THREE.Vector3();
+function place(){
+ const v=$("#e-cam"),b=S.base;let sx=VW/2,sy=VH*.96,U=VW*.4;
+ if(b&&v.videoWidth){const sc=Math.max(VW/v.videoWidth,VH/v.videoHeight),ox=(VW-v.videoWidth*sc)/2,oy=(VH-v.videoHeight*sc)/2;
+  U=Math.min(1.2*b.torso*v.videoHeight*sc,VW*.46);
+  sx=Math.max(U,Math.min(VW-U,VW-(ox+b.ax*v.videoWidth*sc)));sy=Math.min(VH*.97,oy+(b.ay+.03)*v.videoHeight*sc)}
+ cam.updateMatrixWorld();ndc.set(sx/VW*2-1,-(sy/VH)*2+1);rc.setFromCamera(ndc,cam);
+ if(!rc.ray.intersectPlane(pl,hv))return;
+ const d=hv.distanceTo(cam.position),f=(VH/2)/Math.tan(THREE.MathUtils.degToRad(cam.fov/2));
+ let L=U*d/f;grid.position.copy(hv);grid.scale.setScalar(L);
+ for(let k=0;k<14;k++){grid.updateMatrixWorld(true);const far=new THREE.Vector3(0,0,-7.2).applyMatrix4(grid.matrixWorld).project(cam);
+  if((1-far.y)/2*VH>=VH*.27)break;L*=.93;grid.scale.setScalar(L)}}
+function fit(){VW=innerWidth;VH=innerHeight;sk.width=VW;sk.height=VH;renderer.setSize(VW,VH,false);cam.aspect=VW/VH;cam.updateProjectionMatrix();place()}
+addEventListener("resize",fit);
+
+/* ketuk untuk memilih angka, geser untuk memindahkannya */
+const setRay=e=>{ndc.set(e.clientX/VW*2-1,-(e.clientY/VH)*2+1);rc.setFromCamera(ndc,cam)};
+let dr=null;
+cv.addEventListener("pointerdown",e=>{if(!tokOn)return;setRay(e);const h=rc.intersectObjects(tokens)[0];
+ if(h){dr={tok:h.object,start:h.object.position.clone(),x:e.clientX,y:e.clientY,moved:false};cv.setPointerCapture(e.pointerId)}});
+cv.addEventListener("pointermove",e=>{if(!dr)return;if(Math.hypot(e.clientX-dr.x,e.clientY-dr.y)>12)dr.moved=true;if(!dr.moved)return;
+ setRay(e);if(rc.ray.intersectPlane(pl,hv)){const l=grid.worldToLocal(hv.clone());dr.tok.position.set(l.x,.02,l.z)}});
+cv.addEventListener("pointerup",()=>{if(!dr)return;const d=dr;dr=null;if(!d.moved){d.tok.position.copy(d.start);choose(d.tok.userData.n)}});
+
+function drawSk(lm){
+ sg.clearRect(0,0,VW,VH);if(!lm||S.state==="menu")return;
+ const v=$("#e-cam");if(!v.videoWidth)return;
+ const sc=Math.max(VW/v.videoWidth,VH/v.videoHeight),ox=(VW-v.videoWidth*sc)/2,oy=(VH-v.videoHeight*sc)/2;
+ const pt=i=>(lm[i].visibility??0)>.3?[VW-(ox+lm[i].x*v.videoWidth*sc),oy+lm[i].y*v.videoHeight*sc]:null;
+ sg.lineWidth=3;sg.strokeStyle="rgba(91,224,138,.9)";sg.fillStyle="#5be08a";
+ [[11,12],[23,24],[11,23],[12,24],[23,25],[25,27],[24,26],[26,28]].forEach(([a,b])=>{const p=pt(a),q=pt(b);if(p&&q){sg.beginPath();sg.moveTo(p[0],p[1]);sg.lineTo(q[0],q[1]);sg.stroke()}});
+ [11,12,23,24,25,26,27,28].forEach(i=>{const p=pt(i);if(p){sg.beginPath();sg.arc(p[0],p[1],5,0,7);sg.fill()}})}
+const back=t=>{t-=1;return 1+2.7*t*t*t+1.7*t*t};
+function draw(now){
+ grid.visible=S.state!=="menu";const ok=now-okT<700;
+ cells.forEach((c,i)=>{
+  const f=i<S.groups,nx=i===S.groups&&S.state==="ready"&&S.playing,m=c.inner.material;
+  c.lab.visible=f;c.idx.visible=!tokOn;
+  if(f){const a=(now-fillT[i])/450;c.lab.material.map=tex(S.n);c.lab.scale.setScalar(Math.max(a<1?back(Math.max(a,0)):1,.01));
+   m.color.set(ok?"#5be08a":PAL[i]);m.opacity=.9+.1*Math.max(0,1-a*2)}
+  else{m.color.set(PAL[i]);m.opacity=nx?.8+.2*Math.sin(now/180):.7}});
+ tokens.forEach(t=>t.visible=tokOn);
+ renderer.render(scene,cam)}
+fit();
+
+/* ---------- Mode dev (tambahkan #dev di akhir alamat) ---------- */
+if(S.dev){
+ [["up","Ambang naik",.05,.4,.01],["minAir","Min. di udara (ms)",40,400,10],["stable","Diam (ms)",200,1500,50],["guard","Jeda (ms)",0,2000,50]].forEach(([k,t,a,b,s])=>{
+  const l=document.createElement("label");l.innerHTML=`${t}: <b>${P[k]}</b><input type="range" min="${a}" max="${b}" step="${s}" value="${P[k]}">`;
+  l.querySelector("input").oninput=e=>{P[k]=+e.target.value;l.querySelector("b").textContent=P[k];try{localStorage.setItem("engklekP2",JSON.stringify(P))}catch(x){}};$("#e-sl").append(l)});
+ $("#e-sim").onclick=()=>{if(S.playing&&!S.waiting&&!S.paused)accept()}
+}else $("#e-dev").remove();
+</script></body></html>
